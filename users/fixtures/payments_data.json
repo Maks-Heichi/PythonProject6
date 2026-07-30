@@ -1,0 +1,66 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$demo$5Y8P5tclYVdK80Wv7FpCygb0nH8M7h9mGI6yL1Z8l9w=",
+      "last_login": null,
+      "is_superuser": false,
+      "email": "student@example.com",
+      "first_name": "Иван",
+      "last_name": "Петров",
+      "phone": "+79990000000",
+      "city": "Москва",
+      "avatar": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-07-30T08:00:00Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "materials.course",
+    "pk": 1,
+    "fields": {
+      "title": "Python-разработчик",
+      "preview": "",
+      "description": "Курс по основам Python"
+    }
+  },
+  {
+    "model": "materials.lesson",
+    "pk": 1,
+    "fields": {
+      "title": "Введение в Python",
+      "description": "Первый урок курса",
+      "preview": "",
+      "video_url": "https://example.com/python-intro",
+      "course": 1
+    }
+  },
+  {
+    "model": "users.payment",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "payment_date": "2026-07-25",
+      "paid_course": 1,
+      "paid_lesson": null,
+      "payment_amount": "15000.00",
+      "payment_method": "transfer"
+    }
+  },
+  {
+    "model": "users.payment",
+    "pk": 2,
+    "fields": {
+      "user": 1,
+      "payment_date": "2026-07-26",
+      "paid_course": null,
+      "paid_lesson": 1,
+      "payment_amount": "3000.00",
+      "payment_method": "cash"
+    }
+  }
+]

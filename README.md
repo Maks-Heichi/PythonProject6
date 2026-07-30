@@ -42,6 +42,12 @@ API: http://127.0.0.1:8000/
 
 Суперпользователь: `python manage.py createsuperuser` (вход по email)
 
+Загрузка фикстуры с платежами:
+
+```bash
+python manage.py loaddata users/fixtures/payments_data.json
+```
+
 ## Эндпоинты для Postman
 
 **Курсы (ViewSet):**
@@ -54,6 +60,17 @@ API: http://127.0.0.1:8000/
 - `GET` `/lessons/{id}/`
 - `PUT/PATCH` `/lessons/{id}/update/`
 - `DELETE` `/lessons/{id}/delete/`
+
+**Платежи:**
+- `GET` `/payments/`
+- `GET` `/payments/?ordering=payment_date`
+- `GET` `/payments/?ordering=-payment_date`
+- `GET` `/payments/?course=1`
+- `GET` `/payments/?lesson=1`
+- `GET` `/payments/?payment_method=cash`
+
+**Профиль пользователя:**
+- `GET` `/users/{id}/`
 
 Пример создания урока:
 
