@@ -16,7 +16,6 @@ class CourseViewSet(viewsets.ModelViewSet):
 class LessonCreateAPIView(generics.CreateAPIView):
     """Создание урока."""
 
-    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
 
 
@@ -45,4 +44,3 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
     """Удаление урока."""
 
     queryset = Lesson.objects.all()
-    serializer_class = LessonSerializer

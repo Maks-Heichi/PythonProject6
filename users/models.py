@@ -8,6 +8,7 @@ from users.managers import UserManager
 class User(AbstractBaseUser, PermissionsMixin):
     """Пользователь с авторизацией по email."""
 
+    username = None
     email = models.EmailField(unique=True, verbose_name="Email")
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Имя")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Фамилия")

@@ -2,6 +2,18 @@
 
 API для курсов и уроков: пользователь с входом по email, CRUD курса (ViewSet) и урока (Generic-классы).
 
+## База PostgreSQL (pgAdmin4)
+
+1. Запусти PostgreSQL.
+2. В pgAdmin4: **Databases** → **Create** → **Database** → имя `pythonproject` → **Save**.
+3. В корне проекта:
+   ```bash
+   copy .env.example .env
+   ```
+4. В `.env` укажи `DB_PASSWORD` (пароль пользователя `postgres`).
+
+Таблицы создаёт Django: `python manage.py migrate`.
+
 ## Как запустить
 
 ```bash
@@ -10,7 +22,8 @@ cd PycharmProjects/pythonProject
 python -m venv .venv
 .venv\Scripts\activate
 
-pip install django djangorestframework pillow
+pip install django djangorestframework pillow psycopg2-binary python-dotenv
+copy .env.example .env
 python manage.py migrate
 python manage.py runserver
 ```
@@ -19,6 +32,7 @@ python manage.py runserver
 
 ```bash
 poetry install
+copy .env.example .env
 poetry run python manage.py migrate
 poetry run python manage.py runserver
 ```
@@ -57,9 +71,12 @@ API: http://127.0.0.1:8000/
 ## Файлы проекта
 
 - **manage.py** — команды Django
-- **pyproject.toml** — зависимости (Django, DRF, Pillow)
+- **pyproject.toml** — зависимости (Django, DRF, Pillow, PostgreSQL)
+- **.env.example** — пример настроек БД
+- **.env** — пароль БД (только у себя, в Git не попадает)
+- **.flake8** — настройки flake8
 
-**config/settings.py** — настройки, DRF, пользователь, media  
+**config/settings.py** — настройки, PostgreSQL, DRF, пользователь, media  
 **config/urls.py** — главные адреса  
 **config/wsgi.py** — запуск на сервере  
 **config/asgi.py** — асинхронный запуск  
