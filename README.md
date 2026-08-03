@@ -22,9 +22,10 @@ cd PycharmProjects/pythonProject
 python -m venv .venv
 .venv\Scripts\activate
 
-pip install django djangorestframework pillow psycopg2-binary python-dotenv
+pip install django djangorestframework djangorestframework-simplejwt pillow psycopg2-binary python-dotenv
 copy .env.example .env
 python manage.py migrate
+python manage.py loaddata users/fixtures/groups.json
 python manage.py runserver
 ```
 
@@ -34,6 +35,7 @@ python manage.py runserver
 poetry install
 copy .env.example .env
 poetry run python manage.py migrate
+poetry run python manage.py loaddata users/fixtures/groups.json
 poetry run python manage.py runserver
 ```
 
@@ -42,19 +44,33 @@ API: http://127.0.0.1:8000/
 
 Суперпользователь: `python manage.py createsuperuser` (вход по email)
 
-Загрузка фикстуры с платежами:
+Загрузка фикстур:
 
 ```bash
+python manage.py loaddata users/fixtures/groups.json
 python manage.py loaddata users/fixtures/payments_data.json
 ```
 
+Группу `moderators` назначай пользователю через админку.
+
 ## Эндпоинты для Postman
 
-**Курсы (ViewSet):**
+**Авторизация (без токена):**
+- `POST` `/users/register/`
+- `POST` `/token/`
+- `POST` `/token/refresh/`
+
+**Пользователи (нужен JWT):**
+- `GET` `/users/`
+- `GET` `/users/{id}/`
+- `PUT/PATCH` `/users/{id}/update/`
+- `DELETE` `/users/{id}/delete/`
+
+**Курсы (ViewSet, нужен JWT):**
 - `GET/POST` `/courses/`
 - `GET/PUT/PATCH/DELETE` `/courses/{id}/`
 
-**Уроки (Generic):**
+**Уроки (Generic, нужен JWT):**
 - `GET` `/lessons/`
 - `POST` `/lessons/create/`
 - `GET` `/lessons/{id}/`
@@ -69,8 +85,26 @@ python manage.py loaddata users/fixtures/payments_data.json
 - `GET` `/payments/?lesson=1`
 - `GET` `/payments/?payment_method=cash`
 
-**Профиль пользователя:**
-- `GET` `/users/{id}/`
+Пример регистрации:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "12345678",
+  "first_name": "Иван"
+}
+```
+
+Пример получения токена:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "12345678"
+}
+```
+
+В защищённые запросы добавь заголовок: `Authorization: Bearer <access>`
 
 Пример создания урока:
 
@@ -84,6 +118,12 @@ python manage.py loaddata users/fixtures/payments_data.json
 ```
 
 Для картинок в Postman: Body → form-data, поле `preview` типа File.
+
+## Права доступа
+
+- обычный пользователь: создаёт/видит/меняет/удаляет только свои курсы и уроки
+- модератор (`moderators`): видит и меняет любые курсы/уроки, но не создаёт и не удаляет
+- регистрация и `/token/` доступны без авторизации
 
 ## Файлы проекта
 
