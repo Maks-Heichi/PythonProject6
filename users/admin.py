@@ -1,9 +1,9 @@
-"""Регистрация модели пользователя в админ-панели Django."""
+"""Регистрация моделей пользователя в админ-панели Django."""
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from users.models import User
+from users.models import Payment, User
 
 
 @admin.register(User)
@@ -29,3 +29,12 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    """Админка платежей."""
+
+    list_display = ("id", "user", "payment_date", "payment_amount", "payment_method")
+    list_filter = ("payment_method", "payment_date")
+    search_fields = ("user__email",)
