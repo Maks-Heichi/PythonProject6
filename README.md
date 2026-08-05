@@ -77,6 +77,19 @@ python manage.py loaddata users/fixtures/payments_data.json
 - `PUT/PATCH` `/lessons/{id}/update/`
 - `DELETE` `/lessons/{id}/delete/`
 
+**Подписка на курс:**
+- `POST` `/course/subscribe/` с телом `{"course_id": 1}`
+
+Пагинация для `/courses/` и `/lessons/`: `?page=1&page_size=5`
+
+Тесты и покрытие:
+
+```bash
+python manage.py test materials.tests
+coverage run --source='materials,users,config' manage.py test materials.tests
+coverage report > coverage.txt
+```
+
 **Платежи:**
 - `GET` `/payments/`
 - `GET` `/payments/?ordering=payment_date`
