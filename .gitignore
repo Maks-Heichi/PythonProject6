@@ -10,3 +10,5 @@ media/
 *.log
 .mypy_cache/
 .pytest_cache/
+.coverage
+htmlcov/
