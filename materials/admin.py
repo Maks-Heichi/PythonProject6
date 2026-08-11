@@ -2,14 +2,14 @@
 
 from django.contrib import admin
 
-from materials.models import Course, Lesson
+from materials.models import Course, Lesson, Subscription
 
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     """Админка курса."""
 
-    list_display = ("id", "title")
+    list_display = ("id", "title", "owner")
     search_fields = ("title",)
 
 
@@ -17,6 +17,15 @@ class CourseAdmin(admin.ModelAdmin):
 class LessonAdmin(admin.ModelAdmin):
     """Админка урока."""
 
-    list_display = ("id", "title", "course")
+    list_display = ("id", "title", "course", "owner")
     search_fields = ("title",)
     list_filter = ("course",)
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    """Админка подписок."""
+
+    list_display = ("id", "user", "course")
+    list_filter = ("course",)
+    search_fields = ("user__email", "course__title")
