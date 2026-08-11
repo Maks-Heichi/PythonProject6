@@ -35,6 +35,20 @@ class UserAdmin(BaseUserAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     """Админка платежей."""
 
-    list_display = ("id", "user", "payment_date", "payment_amount", "payment_method")
-    list_filter = ("payment_method", "payment_date")
-    search_fields = ("user__email",)
+    list_display = (
+        "id",
+        "user",
+        "payment_date",
+        "payment_amount",
+        "payment_method",
+        "status",
+        "session_id",
+    )
+    list_filter = ("payment_method", "payment_date", "status")
+    search_fields = ("user__email", "session_id")
+    readonly_fields = (
+        "stripe_product_id",
+        "stripe_price_id",
+        "session_id",
+        "payment_link",
+    )

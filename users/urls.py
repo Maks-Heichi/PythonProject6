@@ -5,7 +5,9 @@ from django.urls import path
 from users.views import (
     MyTokenObtainPairView,
     MyTokenRefreshView,
+    PaymentCreateAPIView,
     PaymentListAPIView,
+    PaymentStatusAPIView,
     UserCreateAPIView,
     UserDestroyAPIView,
     UserListAPIView,
@@ -22,4 +24,10 @@ urlpatterns = [
     path("users/<int:pk>/update/", UserUpdateAPIView.as_view(), name="user-update"),
     path("users/<int:pk>/delete/", UserDestroyAPIView.as_view(), name="user-delete"),
     path("payments/", PaymentListAPIView.as_view(), name="payment-list"),
+    path("payments/create/", PaymentCreateAPIView.as_view(), name="payment-create"),
+    path(
+        "payments/<int:pk>/status/",
+        PaymentStatusAPIView.as_view(),
+        name="payment-status",
+    ),
 ]

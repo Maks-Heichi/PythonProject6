@@ -1,13 +1,14 @@
 """API-контроллеры для курсов и уроков."""
 
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from materials.models import Course, Lesson, Subscription
-from materials.paginators import MaterialsPagination
 from materials.serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModer, IsOwner
 
@@ -16,7 +17,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     """CRUD для курса через ViewSet."""
 
     serializer_class = CourseSerializer
-    pagination_class = MaterialsPagination
 
     def get_queryset(self):
         """Модератор видит все курсы, остальные — только свои."""
@@ -58,7 +58,6 @@ class LessonListAPIView(generics.ListAPIView):
 
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = MaterialsPagination
 
     def get_queryset(self):
         """Модератор видит все уроки, остальные — только свои."""
@@ -91,6 +90,7 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 class LessonDestroyAPIView(generics.DestroyAPIView):
     """Удаление урока."""
 
+    serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
 
     def get_queryset(self):
@@ -102,6 +102,34 @@ class SubscriptionAPIView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["course_id"],
+            properties={
+                "course_id": openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="ID курса для подписки/отписки",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Результат операции",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="подписка добавлена / подписка удалена",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="Курс не найден"),
+        },
+        operation_description="Добавляет или удаляет подписку текущего пользователя на курс.",
+    )
     def post(self, request, *args, **kwargs):
         """Добавляет или удаляет подписку пользователя на курс."""
         user = request.user

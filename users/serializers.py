@@ -96,6 +96,67 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+        read_only_fields = (
+            "user",
+            "payment_date",
+            "payment_amount",
+            "payment_method",
+            "stripe_product_id",
+            "stripe_price_id",
+            "session_id",
+            "payment_link",
+            "status",
+        )
+
+
+class PaymentCreateSerializer(serializers.Serializer):
+    """Сериализатор создания платежа за курс через Stripe."""
+
+    course_id = serializers.IntegerField(help_text="ID курса для оплаты")
+
+    def validate_course_id(self, value):
+        """Проверяет существование курса и наличие цены."""
+        try:
+            course = Course.objects.get(pk=value)
+        except Course.DoesNotExist as exc:
+            raise serializers.ValidationError("Курс не найден.") from exc
+        if course.price <= 0:
+            raise serializers.ValidationError("У курса должна быть цена больше 0.")
+        return value
+
+    def create(self, validated_data):
+        """Создаёт продукт, цену и сессию Stripe, сохраняет платёж."""
+        from django.utils import timezone
+
+        from users.services import (
+            StripeServiceError,
+            create_stripe_price,
+            create_stripe_product,
+            create_stripe_session,
+        )
+
+        user = self.context["request"].user
+        course = Course.objects.get(pk=validated_data["course_id"])
+
+        try:
+            product = create_stripe_product(course.title)
+            price = create_stripe_price(product["id"], course.price)
+            session = create_stripe_session(price["id"])
+        except StripeServiceError as exc:
+            raise serializers.ValidationError({"stripe": str(exc)}) from exc
+
+        return Payment.objects.create(
+            user=user,
+            payment_date=timezone.now().date(),
+            paid_course=course,
+            payment_amount=course.price,
+            payment_method=Payment.PAYMENT_TRANSFER,
+            stripe_product_id=product["id"],
+            stripe_price_id=price["id"],
+            session_id=session["id"],
+            payment_link=session.get("url"),
+            status=session.get("status", "open"),
+        )
 
 
 class PaymentCourseSerializer(serializers.ModelSerializer):
@@ -103,7 +164,7 @@ class PaymentCourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ("id", "title", "description")
+        fields = ("id", "title", "description", "price")
 
 
 class PaymentLessonSerializer(serializers.ModelSerializer):
