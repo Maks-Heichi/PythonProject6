@@ -102,7 +102,14 @@ class Payment(models.Model):
         blank=True,
         null=True,
         default="open",
-        verbose_name="Статус платежа",
+        verbose_name="Статус сессии Stripe",
+    )
+    payment_status = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        default="unpaid",
+        verbose_name="Статус оплаты Stripe",
     )
 
     class Meta:

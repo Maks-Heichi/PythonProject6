@@ -42,13 +42,16 @@ class PaymentAdmin(admin.ModelAdmin):
         "payment_amount",
         "payment_method",
         "status",
+        "payment_status",
         "session_id",
     )
-    list_filter = ("payment_method", "payment_date", "status")
+    list_filter = ("payment_method", "payment_date", "status", "payment_status")
     search_fields = ("user__email", "session_id")
     readonly_fields = (
         "stripe_product_id",
         "stripe_price_id",
         "session_id",
         "payment_link",
+        "status",
+        "payment_status",
     )

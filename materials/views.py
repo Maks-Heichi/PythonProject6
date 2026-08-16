@@ -1,6 +1,9 @@
 """API-контроллеры для курсов и уроков."""
 
+from datetime import timedelta
+
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, status, viewsets
@@ -10,6 +13,7 @@ from rest_framework.views import APIView
 
 from materials.models import Course, Lesson, Subscription
 from materials.serializers import CourseSerializer, LessonSerializer
+from materials.tasks import send_course_update_email
 from users.permissions import IsModer, IsOwner
 
 
@@ -40,6 +44,11 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Привязывает курс к авторизованному пользователю."""
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """Сохраняет курс и уведомляет подписчиков об обновлении."""
+        course = serializer.save()
+        send_course_update_email.delay(course.id)
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -85,6 +94,14 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 
     def get_queryset(self):
         return Lesson.objects.all()
+
+    def perform_update(self, serializer):
+        """Уведомляет подписчиков, если курс не обновлялся более 4 часов."""
+        lesson = serializer.save()
+        course = Course.objects.get(pk=lesson.course_id)
+        if timezone.now() - course.updated_at >= timedelta(hours=4):
+            send_course_update_email.delay(course.id)
+            Course.objects.filter(pk=course.pk).update(updated_at=timezone.now())
 
 
 class LessonDestroyAPIView(generics.DestroyAPIView):

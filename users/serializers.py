@@ -106,6 +106,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "session_id",
             "payment_link",
             "status",
+            "payment_status",
         )
 
 
@@ -156,6 +157,7 @@ class PaymentCreateSerializer(serializers.Serializer):
             session_id=session["id"],
             payment_link=session.get("url"),
             status=session.get("status", "open"),
+            payment_status=session.get("payment_status", "unpaid"),
         )
 
 

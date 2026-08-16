@@ -5,7 +5,7 @@ description = ""
 authors = [
     {name = "Maks-Heichi",email = "mister.max1988@yandex.ru"}
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.14,<4.0"
 dependencies = [
     "django (>=6.0.7,<7.0.0)",
     "djangorestframework (>=3.17.1,<4.0.0)",
@@ -16,7 +16,11 @@ dependencies = [
     "coverage (>=7.0.0,<8.0.0)",
     "drf-yasg (>=1.21.0,<2.0.0)",
     "django-cors-headers (>=4.0.0,<5.0.0)",
-    "requests (>=2.34.2,<3.0.0)"
+    "requests (>=2.34.2,<3.0.0)",
+    "celery (>=5.4.0,<6.0.0)",
+    "redis (>=5.0.0,<7.0.0)",
+    "eventlet (>=0.36.0)",
+    "django-celery-beat (>=2.9.0,<3.0.0)"
 ]
 
 

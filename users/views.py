@@ -210,7 +210,8 @@ class PaymentStatusAPIView(APIView):
             )
 
         payment.status = session.get("status", payment.status)
-        payment.save(update_fields=["status"])
+        payment.payment_status = session.get("payment_status", payment.payment_status)
+        payment.save(update_fields=["status", "payment_status"])
 
         return Response(
             {
@@ -218,6 +219,6 @@ class PaymentStatusAPIView(APIView):
                 "session_id": payment.session_id,
                 "status": payment.status,
                 "payment_link": payment.payment_link,
-                "payment_status": session.get("payment_status"),
+                "payment_status": payment.payment_status,
             }
         )
