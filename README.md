@@ -2,6 +2,48 @@
 
 API для курсов и уроков: пользователь с входом по email, CRUD курса (ViewSet) и урока (Generic-классы).
 
+## Запуск через Docker Compose
+
+Нужен установленный [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+1. Скопируй пример окружения:
+   ```bash
+   copy .env.example .env
+   ```
+2. В `.env` для Docker должны быть:
+   - `DB_HOST=db`
+   - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (совпадают с `DB_NAME` / `DB_USER` / `DB_PASSWORD`)
+   - `CELERY_BROKER_URL=redis://redis:6379/0`
+   - `CELERY_RESULT_BACKEND=redis://redis:6379/0`
+3. Собери и запусти все сервисы:
+   ```bash
+   docker compose up --build
+   ```
+   Фоновый режим:
+   ```bash
+   docker compose up -d --build
+   ```
+
+Сервисы:
+- **web** — Django (`http://localhost:8000`)
+- **db** — PostgreSQL (внутри сети Docker, `expose 5432`)
+- **redis** — брокер Celery (внутри сети, `expose 6379`)
+- **celery** — worker
+- **celery_beat** — периодические задачи
+
+Данные PostgreSQL и Redis сохраняются в volumes (`postgres_data`, `redis_data`).
+
+Полезные команды:
+```bash
+docker compose ps
+docker compose logs -f
+docker compose exec web python manage.py createsuperuser
+docker compose down
+```
+
+Swagger: http://localhost:8000/swagger/  
+Админка: http://localhost:8000/admin/
+
 ## База PostgreSQL (pgAdmin4)
 
 1. Запусти PostgreSQL.
@@ -142,8 +184,10 @@ coverage report > coverage.txt
 
 - **manage.py** — команды Django
 - **pyproject.toml** — зависимости (Django, DRF, Pillow, PostgreSQL)
-- **.env.example** — пример настроек БД
-- **.env** — пароль БД (только у себя, в Git не попадает)
+- **Dockerfile** — образ приложения (web / celery)
+- **docker-compose.yml** — запуск web, db, redis, celery, celery_beat
+- **.env.example** — пример переменных окружения
+- **.env** — секреты (только у себя, в Git не попадает)
 - **.flake8** — настройки flake8
 
 **config/settings.py** — настройки, PostgreSQL, DRF, пользователь, media  

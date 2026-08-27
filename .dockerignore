@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+__pycache__
+*.py[cod]
+.mypy_cache
+.pytest_cache
+.coverage
+htmlcov
+.idea
+.env
+*.log
+celerybeat-schedule*
+media
+htmlcov
+.DS_Store
