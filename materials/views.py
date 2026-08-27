@@ -1,0 +1,165 @@
+"""API-контроллеры для курсов и уроков."""
+
+from datetime import timedelta
+
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import generics, status, viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from materials.models import Course, Lesson, Subscription
+from materials.serializers import CourseSerializer, LessonSerializer
+from materials.tasks import send_course_update_email
+from users.permissions import IsModer, IsOwner
+
+
+class CourseViewSet(viewsets.ModelViewSet):
+    """CRUD для курса через ViewSet."""
+
+    serializer_class = CourseSerializer
+
+    def get_queryset(self):
+        """Модератор видит все курсы, остальные — только свои."""
+        user = self.request.user
+        if user.groups.filter(name="moderators").exists():
+            return Course.objects.all()
+        return Course.objects.filter(owner=user)
+
+    def get_permissions(self):
+        """Права доступа в зависимости от action."""
+        if self.action == "create":
+            self.permission_classes = [IsAuthenticated, ~IsModer]
+        elif self.action in ("update", "partial_update", "retrieve"):
+            self.permission_classes = [IsAuthenticated, IsModer | IsOwner]
+        elif self.action == "destroy":
+            self.permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
+        else:
+            self.permission_classes = [IsAuthenticated]
+        return super().get_permissions()
+
+    def perform_create(self, serializer):
+        """Привязывает курс к авторизованному пользователю."""
+        serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """Сохраняет курс и уведомляет подписчиков об обновлении."""
+        course = serializer.save()
+        send_course_update_email.delay(course.id)
+
+
+class LessonCreateAPIView(generics.CreateAPIView):
+    """Создание урока."""
+
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, ~IsModer]
+
+    def perform_create(self, serializer):
+        """Привязывает урок к авторизованному пользователю."""
+        serializer.save(owner=self.request.user)
+
+
+class LessonListAPIView(generics.ListAPIView):
+    """Список уроков."""
+
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Модератор видит все уроки, остальные — только свои."""
+        user = self.request.user
+        if user.groups.filter(name="moderators").exists():
+            return Lesson.objects.all()
+        return Lesson.objects.filter(owner=user)
+
+
+class LessonRetrieveAPIView(generics.RetrieveAPIView):
+    """Получение одного урока."""
+
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsModer | IsOwner]
+
+    def get_queryset(self):
+        return Lesson.objects.all()
+
+
+class LessonUpdateAPIView(generics.UpdateAPIView):
+    """Изменение урока."""
+
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsModer | IsOwner]
+
+    def get_queryset(self):
+        return Lesson.objects.all()
+
+    def perform_update(self, serializer):
+        """Уведомляет подписчиков, если курс не обновлялся более 4 часов."""
+        lesson = serializer.save()
+        course = Course.objects.get(pk=lesson.course_id)
+        if timezone.now() - course.updated_at >= timedelta(hours=4):
+            send_course_update_email.delay(course.id)
+            Course.objects.filter(pk=course.pk).update(updated_at=timezone.now())
+
+
+class LessonDestroyAPIView(generics.DestroyAPIView):
+    """Удаление урока."""
+
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated, IsOwner, ~IsModer]
+
+    def get_queryset(self):
+        return Lesson.objects.all()
+
+
+class SubscriptionAPIView(APIView):
+    """Установка и удаление подписки на курс."""
+
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["course_id"],
+            properties={
+                "course_id": openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="ID курса для подписки/отписки",
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Результат операции",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "message": openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description="подписка добавлена / подписка удалена",
+                        ),
+                    },
+                ),
+            ),
+            404: openapi.Response(description="Курс не найден"),
+        },
+        operation_description="Добавляет или удаляет подписку текущего пользователя на курс.",
+    )
+    def post(self, request, *args, **kwargs):
+        """Добавляет или удаляет подписку пользователя на курс."""
+        user = request.user
+        course_id = request.data.get("course_id")
+        course_item = get_object_or_404(Course, id=course_id)
+
+        subs_item = Subscription.objects.filter(user=user, course=course_item)
+
+        if subs_item.exists():
+            subs_item.delete()
+            message = "подписка удалена"
+        else:
+            Subscription.objects.create(user=user, course=course_item)
+            message = "подписка добавлена"
+
+        return Response({"message": message}, status=status.HTTP_200_OK)
