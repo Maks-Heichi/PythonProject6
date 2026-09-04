@@ -8,8 +8,9 @@ API для курсов и уроков: пользователь с входо�
 
 1. Скопируй пример окружения:
    ```bash
-   copy .env.example .env
+   copy .env.template .env
    ```
+   (или `.env.example` — содержимое то же)
 2. В `.env` для Docker должны быть:
    - `DB_HOST=db`
    - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` (совпадают с `DB_NAME` / `DB_USER` / `DB_PASSWORD`)
@@ -25,13 +26,14 @@ API для курсов и уроков: пользователь с входо�
    ```
 
 Сервисы:
-- **web** — Django (`http://localhost:8000`)
-- **db** — PostgreSQL (внутри сети Docker, `expose 5432`)
+- **nginx** — входная точка (`http://localhost`), reverse-proxy на Django
+- **web** — Django + Gunicorn (внутри сети, `expose 8000`)
+- **db** — PostgreSQL (внутри сети, `expose 5432`)
 - **redis** — брокер Celery (внутри сети, `expose 6379`)
 - **celery** — worker
 - **celery_beat** — периодические задачи
 
-Данные PostgreSQL и Redis сохраняются в volumes (`postgres_data`, `redis_data`).
+Статику отдаёт Nginx из volume `static_volume`. Данные БД и Redis — в `postgres_data` и `redis_data`.
 
 Полезные команды:
 ```bash
@@ -41,8 +43,49 @@ docker compose exec web python manage.py createsuperuser
 docker compose down
 ```
 
-Swagger: http://localhost:8000/swagger/  
-Админка: http://localhost:8000/admin/
+Приложение: http://localhost/  
+Swagger: http://localhost/swagger/  
+Админка: http://localhost/admin/
+
+## CI/CD (GitHub Actions)
+
+Workflow: `.github/workflows/ci.yml`
+
+Запускается на `push` и `pull_request`. Порядок этапов по заданию:
+
+1. **test** — PostgreSQL service + Poetry + `manage.py test`  
+   (ошибка тестов останавливает pipeline)
+2. **lint** — flake8 (`needs: test`)
+3. **build** — сборка Docker-образов приложения и Nginx (`needs: lint`)
+4. **deploy** — SSH на сервер, `git pull`, `docker compose build && up -d`  
+   (`needs: build`, только при push в `main` / `docker` / `ci-cd`)
+
+### Secrets (Settings → Secrets and variables → Actions)
+
+| Secret | Назначение |
+|--------|------------|
+| `SSH_KEY` | приватный SSH-ключ |
+| `SSH_USER` | пользователь на сервере (`student`) |
+| `SERVER_IP` | публичный IP ВМ |
+| `DEPLOY_DIR` | путь к проекту (`/home/student/PythonProject6`) |
+
+Чувствительные данные приложения — только в `.env` на сервере (в git не попадает). Шаблон: `.env.template`.
+
+### Сервер (задание 1)
+
+1. Ubuntu + Docker + Docker Compose.
+2. Клон репозитория, `cp .env.template .env`, заполнить значения, в `ALLOWED_HOSTS` добавить IP сервера.
+3. `docker compose up -d --build`
+4. Пользователь в группе `docker` (без пароля на `sudo docker`):
+   ```bash
+   sudo usermod -aG docker student
+   ```
+   Затем перелогиниться.
+5. Порты: снаружи открыты **22** (SSH) и **80** (Nginx). Порт Django **8000** только внутри Docker (`expose`), Postgres/Redis тоже не публикуются наружу.
+6. Авто-перезапуск: у сервисов `restart: unless-stopped`.
+
+Проверка: http://IP_СЕРВЕРА/swagger/  
+Логи Actions: вкладка **Actions** в GitHub.
 
 ## База PostgreSQL (pgAdmin4)
 
@@ -184,9 +227,11 @@ coverage report > coverage.txt
 
 - **manage.py** — команды Django
 - **pyproject.toml** — зависимости (Django, DRF, Pillow, PostgreSQL)
-- **Dockerfile** — образ приложения (web / celery)
-- **docker-compose.yml** — запуск web, db, redis, celery, celery_beat
-- **.env.example** — пример переменных окружения
+- **Dockerfile** — образ приложения (web / celery / gunicorn)
+- **nginx/** — Dockerfile и nginx.conf (reverse-proxy, порт 80)
+- **docker-compose.yml** — nginx, web, db, redis, celery, celery_beat
+- **.github/workflows/ci.yml** — CI/CD: test → lint → build → deploy
+- **.env.template** / **.env.example** — шаблон переменных окружения
 - **.env** — секреты (только у себя, в Git не попадает)
 - **.flake8** — настройки flake8
 

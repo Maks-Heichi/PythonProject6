@@ -12,5 +12,5 @@ htmlcov
 *.log
 celerybeat-schedule*
 media
-htmlcov
+staticfiles
 .DS_Store
