@@ -4,12 +4,15 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-*&d#i7*2p9(9+(p(4xv%$)-$!jezs+9nfz_8&^_4ohpcd_&fs)")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set in the .env file")
 
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
